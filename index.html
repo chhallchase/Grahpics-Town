@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<!-- Graphics town framework code by Mike Gleicher
+  -- written October, 2015
+  -- Implemented and updated by Chase Hall, April 2018
+  -->
+<head>
+    <meta charset="UTF-8">
+    <title>Castle</title>
+</head>
+<body>
+<!-- load this stuff first -->
+<script src="Libraries/twgl-full.js"></script>
+<script src="Libraries/panel.js"></script>
+<script src="Libraries/arcball.js"></script>
+<script src="grobject.js"></script>
+<script src="ExampleObjects/ground.js"></script>
+
+<!-- This is where we load the objects for the world
+<script src="ExampleObjects/texturedplane.js"></script>-->
+<script src="ExampleObjects/pyramid.js"></script>
+<script src="MyObjects/counterweight.js"></script>
+<script src="ExampleObjects/cube.js"></script>
+<script src="MyObjects/Plank.js"></script>
+<script src="MyObjects/scene.js"></script>
+
+<!-- I am adding the helicopter
+<script src="Helicopter/helicopter.js"></script> -->
+
+<!-- This gets loaded LAST (actually, it probably doesn't have to) -->
+<script src="graphicstown.js"></script>
+</body>
+
+<!-- all of the shaders get stuck here in the HTML because
+  -- that's the only way I know to load them without either
+  -- sticking them in JavaScript strings, or using a web server
+  -->
+
+<script id="cube-vs" type="notjs">
+// specialized shader for the simple cube
+// we assume that the model matrix works as the normal
+//      matrix - this only is try if the model matrix
+//      it a rotate/translate
+//      (uniform scale is OK since we re-normalize)
+// color is solid
+// simple lighting
+    precision highp float;
+
+    attribute vec3 vpos;
+    attribute vec3 vnormal;
+    //attribute vec3 vcolor;
+    attribute vec2 vTexCoord;
+
+    //varying vec3 outColor;
+    varying vec3 fNormal;
+    varying vec3 fPosition;
+    varying vec2 fTexCoord;
+
+    uniform mat4 view;
+    uniform mat4 proj;
+    uniform mat4 model;
+    uniform vec3 lightdir;
+    uniform vec3 cubecolor;
+
+
+    void main(void) {
+        fPosition = (view * model * vec4(vpos, 1.0)).xyz;
+        fNormal = normalize(view * model * vec4(vnormal,0.0)).xyz;
+        gl_Position = proj * view * model * vec4(vpos, 1.0);
+        fTexCoord = vTexCoord;
+    }
+</script>
+<script id="cube-fs" type="notjs">
+// simple shader that does vertex coloring
+//  (e.g. the vertex shader figures the lighting
+// note this is used for more than just the cube
+    precision highp float;
+    //varying vec3 outColor;
+    varying vec3 fPosition;
+    varying vec2 fTexCoord;
+    varying vec3 fNormal;
+
+    uniform vec3 lightdir;
+    uniform vec3 cubecolor;
+    uniform sampler2D tex;
+
+    const float specular_coeff = 0.9;
+    const float specular_exp = 6.0;
+    const vec3  light_color = vec3(1.0, 1.0, 1.0);
+
+
+    void main(void) {
+        vec4 texColor = texture2D(tex,fTexCoord);
+
+
+        vec3 l = normalize(lightdir);
+        vec3 n = normalize(fNormal);
+        vec3 e = normalize(-fPosition);
+        vec3 h = normalize (e+l);
+
+
+
+        vec3 ambientColor = .6*fNormal;
+        vec3 diffuseColor = .5*fNormal*dot(l,n);
+
+
+        vec3 specular_color = specular_coeff * pow(max(0.0,dot(n,h)),specular_exp) * light_color;
+        gl_FragColor = vec4(texColor.xyz + specular_color+ambientColor+diffuseColor, 1.0);
+        gl_FragColor = vec4((texColor.xyz * vec3(0.941176, 0.901961, 0.54902)) * diffuseColor,texColor.a);
+
+    }
+</script>
+<script id="pyramid-vs" type="notjs">
+// specialized shader for the simple pyramid
+// we assume that the model matrix works as the normal
+//      matrix - this only is try if the model matrix
+//      it a rotate/translate
+//      (uniform scale is OK since we re-normalize)
+// color is solid
+// simple lighting
+   precision highp float;
+
+    attribute vec3 vpos;
+    attribute vec3 vnormal;
+    attribute vec3 vcolor;
+
+    varying vec3 outColor;
+    varying vec3 fNormal;
+    varying vec3 fPosition;
+
+
+    uniform mat4 view;
+    uniform mat4 proj;
+    uniform mat4 model;
+    uniform vec3 lightdir;
+    uniform vec3 pyramidcolor;
+
+
+    void main(void) {
+        fPosition = (view * model * vec4(vpos, 1.0)).xyz;
+        fNormal = normalize(view * model * vec4(vnormal,0.0)).xyz;
+        outColor = vcolor;
+        gl_Position = proj * view * model * vec4(vpos, 1.0);
+    }
+</script>
+<script id="pyramid-fs" type="notjs">
+// simple shader that does vertex coloring
+//  (e.g. the vertex shader figures the lighting
+// note this is used for more than just the pyramid
+    precision highp float;
+    varying vec3 outColor;
+    varying vec3 fNormal;
+    varying vec3 fPosition;
+    uniform vec3 lightdir;
+    uniform vec3 pyramidcolor;
+
+    const float specular_coeff = 1.0;
+    const float specular_exp = 6.0;
+    const vec3  light_color = vec3(1.0, 1.0, 1.0);
+
+
+    void main(void) {
+        vec3 l = normalize(lightdir);
+        vec3 n = normalize(fNormal);
+        vec3 e = normalize(-fPosition);
+        vec3 h = normalize (e+l);
+
+        vec3 ambientColor = .7*pyramidcolor;
+        vec3 diffuseColor = .5*pyramidcolor*dot(l,n);
+
+        vec3 specular_color = specular_coeff * pow(max(0.0,dot(n,h)),specular_exp) * light_color;
+        gl_FragColor = vec4(outColor + specular_color+ambientColor+diffuseColor, 1.0);
+    }
+</script>
+
+<script id="plank-vs" type="notjs">
+// specialized shader for the simple plank
+// we assume that the model matrix works as the normal
+//      matrix - this only is try if the model matrix
+//      it a rotate/translate
+//      (uniform scale is OK since we re-normalize)
+// color is solid
+// simple lighting
+    precision highp float;
+    attribute vec3 vpos;
+    attribute vec3 vnormal;
+    varying vec3 outColor;
+    uniform mat4 view;
+    uniform mat4 proj;
+    uniform mat4 model;
+    uniform vec3 lightdir;
+    uniform vec3 plankcolor;
+    void main(void) {
+        gl_Position = proj * view * model * vec4(vpos, 1.0);
+        vec4 normal = normalize(model * vec4(vnormal,0.0));
+        float diffuse = .5 + .5*abs(dot(normal, vec4(lightdir,0.0)));
+        outColor = plankcolor * diffuse;
+    }
+</script>
+<script id="plank-fs" type="notjs">
+// simple shader that does vertex coloring
+//  (e.g. the vertex shader figures the lighting
+// note this is used for more than just the plank
+    precision highp float;
+    varying vec3 outColor;
+    void main(void) {
+        gl_FragColor = vec4(outColor, 1.0);
+    }
+</script>
+<script id="counterweight-vs" type="notjs">
+// specialized shader for the simple counterweight
+// we assume that the model matrix works as the normal
+//      matrix - this only is try if the model matrix
+//      it a rotate/translate
+//      (uniform scale is OK since we re-normalize)
+// color is solid
+// simple lighting
+    precision highp float;
+    attribute vec3 vpos;
+    attribute vec3 vnormal;
+    varying vec3 outColor;
+    uniform mat4 view;
+    uniform mat4 proj;
+    uniform mat4 model;
+    uniform vec3 lightdir;
+    uniform vec3 counterweightcolor;
+    void main(void) {
+        gl_Position = proj * view * model * vec4(vpos, 1.0);
+        vec4 normal = normalize(model * vec4(vnormal,0.0));
+        float diffuse = .5 + .5*abs(dot(normal, vec4(lightdir,0.0)));
+        outColor = counterweightcolor * diffuse;
+    }
+</script>
+<script id="counterweight-fs" type="notjs">
+// simple shader that does vertex coloring
+//  (e.g. the vertex shader figures the lighting
+// note this is used for more than just the counterweight
+    precision highp float;
+    varying vec3 outColor;
+    void main(void) {
+        gl_FragColor = vec4(outColor, 1.0);
+    }
+</script>
+
+<!-- Special Ground Plane Shader - makes a boring
+  -- checkerboard
+  -->
+<script id="ground-vs" type="not-js">
+    precision highp float;
+
+    attribute vec3 vpos;
+    varying vec3 outPos;
+
+    uniform mat4 view;
+    uniform mat4 proj;
+
+    void main(void) {
+        gl_Position = proj * view * vec4(vpos, 1.0);
+        outPos = vpos;
+    }
+</script>
+<script id="ground-fs" type="notjs">
+    // note this is used for more than just the cube
+    precision highp float;
+    varying vec3 outPos;
+    void main(void) {
+        float xs = step(1.0,mod(outPos.x,2.0));
+        float zs = step(1.0,mod(outPos.z,2.0));
+        float ss = (xs>.5) ? zs : 1.0-zs;
+        gl_FragColor = mix(vec4(0.5,0.5,0.5,1),
+                           vec4(0.3,0.5,0.4,1),
+                           ss
+                           );
+
+    }
+</script>
+
+</html>
