@@ -6,9 +6,7 @@
  this is even simpler than the simplest object - it's a ground plane underneath
  the objects (at Z=0) - just a big plane. all coloring handled in the vertex
  shader. no normals. it's just a checkerboard that is simple.
-
  no normals, but a funky shader
-
  however, I am going to do it with TWGL to keep the code size down
  **/
 
@@ -31,10 +29,10 @@ var groundPlaneSize = groundPlaneSize || 5;
     // putting the arrays of object info here as well
     var vertexPos = [
         -groundPlaneSize, 0, -groundPlaneSize,
-         groundPlaneSize, 0, -groundPlaneSize,
-         groundPlaneSize, 0,  groundPlaneSize,
+        groundPlaneSize, 0, -groundPlaneSize,
+        groundPlaneSize, 0,  groundPlaneSize,
         -groundPlaneSize, 0, -groundPlaneSize,
-         groundPlaneSize, 0,  groundPlaneSize,
+        groundPlaneSize, 0,  groundPlaneSize,
         -groundPlaneSize, 0,  groundPlaneSize
     ];
 
@@ -65,7 +63,7 @@ var groundPlaneSize = groundPlaneSize || 5;
             }
             var arrays = { vpos : {numComponents:3, data:vertexPos }};
             buffers = twgl.createBufferInfoFromArrays(gl,arrays);
-       },
+        },
         draw : function(drawingState) {
             var gl = drawingState.gl;
             gl.useProgram(shaderProgram.program);

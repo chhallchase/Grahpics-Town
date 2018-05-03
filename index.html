@@ -15,9 +15,11 @@
 <script src="Libraries/arcball.js"></script>
 <script src="grobject.js"></script>
 <script src="ExampleObjects/ground.js"></script>
+<!--<script type="text/javascript" src="skybox.imgjs"></script> -->
 
 <!-- This is where we load the objects for the world
 <script src="ExampleObjects/texturedplane.js"></script>-->
+<script src="MyObjects/skybox.js"></script>
 <script src="ExampleObjects/pyramid.js"></script>
 <script src="MyObjects/counterweight.js"></script>
 <script src="ExampleObjects/cube.js"></script>
@@ -44,71 +46,48 @@
 //      (uniform scale is OK since we re-normalize)
 // color is solid
 // simple lighting
-    precision highp float;
+         precision highp float;
+        attribute vec3 vpos;
+        uniform mat4 view;
+        uniform mat4 proj;
+        uniform mat4 model;
+        attribute vec3 vnormal;
+        varying vec3 fNormal;
+        varying vec3 outNormal;
+        varying vec2 fTexCoord;
+        attribute vec2 vTex;
+        uniform mat3 normalMatrix;
+        uniform vec3 lightdir;
+        varying vec3 outLightDir;
+        varying vec3 fPos;
 
-    attribute vec3 vpos;
-    attribute vec3 vnormal;
-    //attribute vec3 vcolor;
-    attribute vec2 vTexCoord;
-
-    //varying vec3 outColor;
-    varying vec3 fNormal;
-    varying vec3 fPosition;
-    varying vec2 fTexCoord;
-
-    uniform mat4 view;
-    uniform mat4 proj;
-    uniform mat4 model;
-    uniform vec3 lightdir;
-    uniform vec3 cubecolor;
-
-
-    void main(void) {
-        fPosition = (view * model * vec4(vpos, 1.0)).xyz;
-        fNormal = normalize(view * model * vec4(vnormal,0.0)).xyz;
-        gl_Position = proj * view * model * vec4(vpos, 1.0);
-        fTexCoord = vTexCoord;
-    }
+        void main(void) {
+            outLightDir = lightdir;
+            fTexCoord = vTex;
+            gl_Position = proj * view * model * vec4(vpos, 1.0);
+            fNormal = normalize(normalMatrix * vnormal);
+            outNormal = normalize(view * model * vec4(vnormal,0.0)).xyz;
+            fPos = (view * model * vec4(vpos.xyz,1.0)).xyz;
+        }
 </script>
 <script id="cube-fs" type="notjs">
-// simple shader that does vertex coloring
-//  (e.g. the vertex shader figures the lighting
-// note this is used for more than just the cube
-    precision highp float;
-    //varying vec3 outColor;
-    varying vec3 fPosition;
-    varying vec2 fTexCoord;
-    varying vec3 fNormal;
+     precision highp float;
+        varying vec3 outColor;
+        varying vec3 outLightDir;
+        varying vec3 fPos;
+        varying vec3 outNormal;
+        varying vec2 fTexCoord;
+        uniform vec3 cubecolor;
+        uniform sampler2D texSampler;
 
-    uniform vec3 lightdir;
-    uniform vec3 cubecolor;
-    uniform sampler2D tex;
-
-    const float specular_coeff = 0.9;
-    const float specular_exp = 6.0;
-    const vec3  light_color = vec3(1.0, 1.0, 1.0);
-
-
-    void main(void) {
-        vec4 texColor = texture2D(tex,fTexCoord);
-
-
-        vec3 l = normalize(lightdir);
-        vec3 n = normalize(fNormal);
-        vec3 e = normalize(-fPosition);
-        vec3 h = normalize (e+l);
-
-
-
-        vec3 ambientColor = .6*fNormal;
-        vec3 diffuseColor = .5*fNormal*dot(l,n);
-
-
-        vec3 specular_color = specular_coeff * pow(max(0.0,dot(n,h)),specular_exp) * light_color;
-        gl_FragColor = vec4(texColor.xyz + specular_color+ambientColor+diffuseColor, 1.0);
-        gl_FragColor = vec4((texColor.xyz * vec3(0.941176, 0.901961, 0.54902)) * diffuseColor,texColor.a);
-
-    }
+        void main(void) {
+            vec3 norm = normalize (normalize(-fPos) + normalize(outLightDir));
+            vec4 texColor = texture2D(texSampler, fTexCoord);
+            float diffuse = 1.0 + 3.3*abs(dot(outNormal, outLightDir));
+            float specular = pow(max(dot(normalize(outNormal),norm), 0.01), 20.0);
+            vec3 outColor = cubecolor * diffuse* specular;
+            gl_FragColor = vec4(texColor) + vec4(outColor, 1.0);
+        }
 </script>
 <script id="pyramid-vs" type="notjs">
 // specialized shader for the simple pyramid
@@ -118,61 +97,49 @@
 //      (uniform scale is OK since we re-normalize)
 // color is solid
 // simple lighting
-   precision highp float;
+         precision highp float;
+        attribute vec3 vpos;
+        uniform mat4 view;
+        uniform mat4 proj;
+        uniform mat4 model;
+        attribute vec3 vnormal;
+        varying vec3 fNormal;
+        varying vec3 outNormal;
+        varying vec2 fTexCoord;
+        attribute vec2 vTex;
+        uniform mat3 normalMatrix;
+        uniform vec3 lightdir;
+        varying vec3 outLightDir;
+        varying vec3 fPos;
 
-    attribute vec3 vpos;
-    attribute vec3 vnormal;
-    attribute vec3 vcolor;
-
-    varying vec3 outColor;
-    varying vec3 fNormal;
-    varying vec3 fPosition;
-
-
-    uniform mat4 view;
-    uniform mat4 proj;
-    uniform mat4 model;
-    uniform vec3 lightdir;
-    uniform vec3 pyramidcolor;
-
-
-    void main(void) {
-        fPosition = (view * model * vec4(vpos, 1.0)).xyz;
-        fNormal = normalize(view * model * vec4(vnormal,0.0)).xyz;
-        outColor = vcolor;
-        gl_Position = proj * view * model * vec4(vpos, 1.0);
-    }
+        void main(void) {
+            outLightDir = lightdir;
+            fTexCoord = vTex;
+            gl_Position = proj * view * model * vec4(vpos, 1.0);
+            fNormal = normalize(normalMatrix * vnormal);
+            outNormal = normalize(view * model * vec4(vnormal,0.0)).xyz;
+            fPos = (view * model * vec4(vpos.xyz,1.0)).xyz;
+        }
 </script>
 <script id="pyramid-fs" type="notjs">
-// simple shader that does vertex coloring
-//  (e.g. the vertex shader figures the lighting
-// note this is used for more than just the pyramid
-    precision highp float;
-    varying vec3 outColor;
-    varying vec3 fNormal;
-    varying vec3 fPosition;
-    uniform vec3 lightdir;
-    uniform vec3 pyramidcolor;
+     precision highp float;
+        varying vec3 outColor;
+        varying vec3 outLightDir;
+        varying vec3 fPos;
+        varying vec3 outNormal;
+        varying vec2 fTexCoord;
+        uniform vec3 pyramidcolor;
+        uniform sampler2D texSampler;
 
-    const float specular_coeff = 1.0;
-    const float specular_exp = 6.0;
-    const vec3  light_color = vec3(1.0, 1.0, 1.0);
-
-
-    void main(void) {
-        vec3 l = normalize(lightdir);
-        vec3 n = normalize(fNormal);
-        vec3 e = normalize(-fPosition);
-        vec3 h = normalize (e+l);
-
-        vec3 ambientColor = .7*pyramidcolor;
-        vec3 diffuseColor = .5*pyramidcolor*dot(l,n);
-
-        vec3 specular_color = specular_coeff * pow(max(0.0,dot(n,h)),specular_exp) * light_color;
-        gl_FragColor = vec4(outColor + specular_color+ambientColor+diffuseColor, 1.0);
-    }
+        void main(void) {
+            vec3 norm = normalize (normalize(-fPos) + normalize(outLightDir));
+            vec4 texColor = texture2D(texSampler, fTexCoord);
+            float diffuse = 1.0 + 3.3*abs(dot(outNormal, outLightDir));
+            float specular = pow(max(dot(normalize(outNormal),norm), 0.01), 20.0);
+            vec3 outColor = pyramidcolor * diffuse* specular;
+            gl_FragColor = vec4(texColor) + vec4(outColor, 1.0);
+        }
 </script>
-
 <script id="plank-vs" type="notjs">
 // specialized shader for the simple plank
 // we assume that the model matrix works as the normal
@@ -242,18 +209,45 @@
     }
 </script>
 
+<script id="skybox-vs" type="not-js">
+    precision highp float;
+
+    attribute vec3 vpos;
+    attribute vec3 vnormal;
+    varying vec3 fPos;
+
+    uniform mat4 view;
+    uniform mat4 proj;
+    uniform mat4 model;
+    uniform vec3 lightdir;
+    uniform vec3 cubecolor;
+
+
+    void main(void) {
+        gl_Position = proj * view *model * vec4(vpos, 1.0);
+        fPos = vpos;
+    }
+</script>
+
+<script id="skybox-fs" type="not-js">
+    precision highp float;
+    varying vec3 fPos;
+    uniform samplerCube skymap;
+    void main(void) {
+        gl_FragColor = vec4(textureCube(skymap, fPos).xyz, 1.0);
+    }
+</script>
+
+
 <!-- Special Ground Plane Shader - makes a boring
   -- checkerboard
   -->
 <script id="ground-vs" type="not-js">
     precision highp float;
-
     attribute vec3 vpos;
     varying vec3 outPos;
-
     uniform mat4 view;
     uniform mat4 proj;
-
     void main(void) {
         gl_Position = proj * view * vec4(vpos, 1.0);
         outPos = vpos;
@@ -271,7 +265,6 @@
                            vec4(0.3,0.5,0.4,1),
                            ss
                            );
-
     }
 </script>
 

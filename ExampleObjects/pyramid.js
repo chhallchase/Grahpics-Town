@@ -61,6 +61,20 @@ var Pyramid = undefined;
                         -0.5, 0.0, -0.5,
                         0.0, 1.0, 0.0,
                     ] },
+                vTex : { numComponents: 3, data: [
+                        -0.5, 0.0, -0.5,    // triangle 1
+                        0.5, 0.0, -0.5,
+                        0.0, 1.0, 0.0,
+                        -0.5, 0.0, -0.5,    // triangle 1
+                        0.5, 0.0, -0.5,
+                        0.0, 1.0, 0.0,
+                        -0.5, 0.0, -0.5,    // triangle 1
+                        0.5, 0.0, -0.5,
+                        0.0, 1.0, 0.0,
+                        -0.5, 0.0, -0.5,    // triangle 1
+                        0.5, 0.0, -0.5,
+                        0.0, 1.0, 0.0,
+                    ] },
                 vnormal : {numComponents:3, data: [
                         0,0,-1,
                         0,0,-1,
@@ -78,6 +92,27 @@ var Pyramid = undefined;
                     ]}
             };
             buffers = twgl.createBufferInfoFromArrays(drawingState.gl,arrays);
+        }
+        shaderProgram.program.texSampler4 = gl.getUniformLocation(shaderProgram.program, "texSampler4");
+        gl.uniform1i(shaderProgram.texSampler4, 0);
+        var pyramidTex = gl.createTexture();
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, pyramidTex);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+        var pyramidImg = new Image();
+        pyramidImg.crossOrigin = "anonymous";
+        pyramidImg.src = "https://i.imgur.com/p1VHtga.png";
+
+        window.setTimeout(pyramidImg.onload, 200);
+        pyramidImg.onload = function LoadTexture() {
+            gl.activeTexture(gl.TEXTURE0);
+            gl.bindTexture(gl.TEXTURE_2D, pyramidTex);
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, pyramidImg);
+            gl.generateMipmap(gl.TEXTURE_2D);
+
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.MIRRORED_REPEAT);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.MIRRORED_REPEAT);
         }
 
     };
