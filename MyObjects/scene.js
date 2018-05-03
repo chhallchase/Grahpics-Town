@@ -131,5 +131,5 @@ new Pillar("pillar3",[2,.5,0],1);
 
 grobjects.push(new Skybox("skybox", [0,0,0],100,[1,1,1]));
 grobjects.push(new Plank("plank1",[-1.5,.6,-3.7],.5));
-grobjects.push(new Pyramid("plankPyramid",[-1.2,0,-4],1,[.545,.27,.0745]));
+grobjects.push(new Pyramid2("plankPyramid",[-1.2,0,-4],1));
 grobjects.push(new counterweight("counterweight",[-2.7,.4,-3.7], .5));
