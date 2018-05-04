@@ -90,6 +90,66 @@
             gl_FragColor = vec4(texColor) + vec4(outColor, 1.0);
         }
 </script>
+
+<script id="bump-vs" type="not-js">
+        attribute vec3 vpos;
+        attribute vec3 vnormal;
+        attribute vec3 vColor;
+        attribute vec2 vTex;
+        varying vec3 fPosition;
+        varying vec3 fColor;
+        varying vec3 fNormal;
+        varying vec2 fTex;
+        uniform mat4 proj;
+        uniform mat4 view;
+        uniform mat4 model;
+
+        void main(void) {
+          fTex = vTex;
+          fColor = vColor;
+          fNormal = vnormal;
+          fPosition = (view * model * vec4(vpos, 1.0)).xyz;
+          gl_Position = proj * view * model  * vec4(vpos, 1.0);
+        }
+      </script>
+
+<script id="bump-fs" type="not-js">
+        precision highp float;
+        varying vec3 fPosition;
+        varying vec3 fColor;
+        varying vec3 fNormal;
+        varying vec2 fTex;
+        uniform mat4 uMVn;
+        uniform sampler2D texSampler;
+        uniform vec3 cubecolor;
+
+        const float light_str    = 8.0;
+        const vec3  lightCol  = vec3(1.0, 1.0, 1.0);
+        const vec3  lightZ    = vec3(0.0,0.0,1.0);
+        const float diffuse  = 0.9;
+        const float specular = 1.5;
+        const float specular_exponent = 25.0;
+        const float ambient  = 0.55;
+
+
+        vec2 BlinnPhong(vec3 light_direction, vec3 n, float light_val, float Ka,
+          float Kd, float Ks, float shine) {
+          vec3 normLightDir = normalize(light_direction);
+          vec3 norm = normalize(normalize(-fPosition) + normLightDir);
+          float specular =  Ks * pow(max(0.0, dot(n,norm)), shine);
+          float diffuse = Ka + Kd * light_val * max(0.0, dot(n, normLightDir));
+          return vec2(diffuse, specular);
+        }
+
+        void main(void) {
+          vec3 tmp = (uMVn * vec4(normalize(fNormal + texture2D(texSampler,fTex).xyz), 0.0)).xyz;
+          vec3 ambient_diffuse_lighting = BlinnPhong(lightZ, tmp, light_str, ambient, diffuse, 0.0,1.0).x * fColor;
+          vec3 color_strength  = BlinnPhong(lightZ,tmp,0.0 ,0.0, 0.0, specular,specular_exponent).y*lightCol;
+          gl_FragColor = vec4(ambient_diffuse_lighting + color_strength + cubecolor, 1.0);
+        }
+  </script>
+
+
 <script id="pyramid-vs" type="not-js" >
      uniform mat4 proj;
      uniform mat4 view;

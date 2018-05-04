@@ -38,14 +38,14 @@ var Cube = undefined;
         this.name = name;
         this.position = position || [0,0,0];
         this.size = size || 1.0;
-        this.color = color || [.7,.8,.9];
+        this.color = [.4,.4,.4];
     };
     Cube.prototype.init = function(drawingState) {
         var gl=drawingState.gl;
 
         // create the shaders once - for all cubes
         if (!shaderProgram) {
-            shaderProgram = twgl.createProgramInfo(gl, ["cube-vs", "cube-fs"]);
+            shaderProgram = twgl.createProgramInfo(gl, ["bump-vs", "bump-fs"]);
         }
         if (!buffers) {
             var arrays = {
@@ -127,16 +127,19 @@ var Cube = undefined;
         gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
         var castleImg = new Image();
         castleImg.crossOrigin = "anonymous";
-        castleImg.src = "https://i.imgur.com/ZGebRtJ.jpg";
+        castleImg.src = "https://i.imgur.com/rPiYrqo.png";
 
         window.setTimeout(castleImg.onload, 200);
         castleImg.onload = function LoadTexture() {
             gl.activeTexture(gl.TEXTURE1);
             gl.bindTexture(gl.TEXTURE_2D, castleWall);
             gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, castleImg);
-            gl.generateMipmap(gl.TEXTURE_2D);
-
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+            // // gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
+            // gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.MIRRORED_REPEAT);
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.MIRRORED_REPEAT);
         }
@@ -147,12 +150,14 @@ var Cube = undefined;
         // we make a model matrix to place the cube in the world
         var modelM = twgl.m4.scaling([this.size,this.size,this.size]);
         twgl.m4.setTranslation(modelM,this.position,modelM);
+        var tMVn = twgl.m4.axisRotation(drawingState.sunDirection,Math.PI/4);
         // the drawing coce is straightforward - since twgl deals with the GL stuff for us
         var gl = drawingState.gl;
         gl.useProgram(shaderProgram.program);
         twgl.setBuffersAndAttributes(gl,shaderProgram,buffers);
         twgl.setUniforms(shaderProgram,{
-            view:drawingState.view, proj:drawingState.proj, lightdir:drawingState.sunDirection, model: modelM, cubecolor: this.color});
+            view:drawingState.view, proj:drawingState.proj, lightdir:drawingState.sunDirection, model: modelM, cubecolor: this.color,
+            uMVn: tMVn});
 
         shaderProgram.program.texSampler = gl.getUniformLocation(shaderProgram.program, "texSampler");
         gl.uniform1i(shaderProgram.program.texSampler, 1);
